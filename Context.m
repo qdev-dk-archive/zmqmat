@@ -25,9 +25,15 @@ classdef Context < handle
             sock_ptr = calllib('libzmq', 'zmq_socket',...
                 obj.ptr, int32(typ));
             if sock_ptr.isNull()
-                zmq.internal.ThrowZMQError();
+                zmq.internal.throw_zmq_error();
             end
             sock = zmq.Socket(sock_ptr, obj, obj.ptr, typ);
+        end
+
+        function ptr = get_raw_ptr(obj)
+        % get_raw_ptr
+        %   Returns a ptr to the underlying zmq context.
+            ptr = obj.ptr;
         end
     end
     methods (Static)

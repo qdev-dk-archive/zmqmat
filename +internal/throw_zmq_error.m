@@ -1,5 +1,5 @@
-function ThrowZMQError()
-% ThrowZMQError
+function throw_zmq_error()
+% throw_zmq_error
 %   This function will throw an error based on
 %   the last zmq error. Note, it will always throw,
 %   it should only be called when zmq api call has given 

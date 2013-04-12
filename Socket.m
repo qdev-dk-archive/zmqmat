@@ -33,28 +33,28 @@ classdef Socket < handle
         function bind(obj, endpoint)
             r = calllib('libzmq', 'zmq_bind', obj.ptr, endpoint);
             if r == -1
-                zmq.internal.ThrowZMQError();
+                zmq.internal.throw_zmq_error();
             end
         end
 
         function unbind(obj, endpoint)
             r = calllib('libzmq', 'zmq_unbind', obj.ptr, endpoint);
             if r == -1
-                zmq.internal.ThrowZMQError();
+                zmq.internal.throw_zmq_error();
             end
         end
 
         function connect(obj, endpoint)
             r = calllib('libzmq', 'zmq_connect', obj.ptr, endpoint);
             if r == -1
-                zmq.internal.ThrowZMQError();
+                zmq.internal.throw_zmq_error();
             end
         end
 
         function disconnect(obj, endpoint)
             r = calllib('libzmq', 'zmq_disconnect', obj.ptr, endpoint);
             if r == -1
-                zmq.internal.ThrowZMQError();
+                zmq.internal.throw_zmq_error();
             end
         end
 
@@ -70,7 +70,7 @@ classdef Socket < handle
             r = calllib('libzmq', 'zmq_send', ...
                 obj.ptr, bytes_ptr, numel(bytes), 0);
             if r == -1
-                zmq.internal.ThrowZMQError();
+                zmq.internal.throw_zmq_error();
             end
         end
 
@@ -89,6 +89,12 @@ classdef Socket < handle
 
         function [received, bytes] = recv_bytes_dont_wait(obj)
             [received, bytes] = obj.recv_base(false);
+        end
+
+        function ptr = get_raw_ptr(obj)
+        % get_raw_ptr
+        %   Returns a ptr to the underlying zmq socket.
+            ptr = obj.ptr;
         end
     end
     methods (Access=private)
@@ -115,7 +121,7 @@ classdef Socket < handle
                         received = false;
                         return;
                     end
-                    zmq.internal.ThrowZMQError();
+                    zmq.internal.throw_zmq_error();
                 end
                 siz = calllib('libzmq', 'zmq_msg_size', obj.msg_ptr);
                 if siz ~= 0
