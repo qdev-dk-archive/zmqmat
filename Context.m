@@ -19,13 +19,15 @@ classdef Context < handle
         end
 
         function sock = socket(obj, typ)
-            if not(metaclass(typ) == ?zmq.SocketType)
-                error('typ should be a SocketType');
-            else
-                sock = zmq.Socket(...
-                    calllib('libzmq', 'zmq_socket', obj.ptr, int32(typ)),...
-                    obj, obj.ptr, typ);
+            if metaclass(typ) ~= ?zmq.Type
+                error('typ should be a zmq.Type instance');
             end
+            sock_ptr = calllib('libzmq', 'zmq_socket',...
+                obj.ptr, int32(typ));
+            if sock_ptr.isNull()
+                zmq.internal.ThrowZMQError();
+            end
+            sock = zmq.Socket(sock_ptr, obj, obj.ptr, typ);
         end
     end
     methods (Static)

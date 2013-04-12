@@ -33,28 +33,28 @@ classdef Socket < handle
         function bind(obj, endpoint)
             r = calllib('libzmq', 'zmq_bind', obj.ptr, endpoint);
             if r == -1
-                zmq.ThrowZMQError();
+                zmq.internal.ThrowZMQError();
             end
         end
 
         function unbind(obj, endpoint)
             r = calllib('libzmq', 'zmq_unbind', obj.ptr, endpoint);
             if r == -1
-                zmq.ThrowZMQError();
+                zmq.internal.ThrowZMQError();
             end
         end
 
         function connect(obj, endpoint)
             r = calllib('libzmq', 'zmq_connect', obj.ptr, endpoint);
             if r == -1
-                zmq.ThrowZMQError();
+                zmq.internal.ThrowZMQError();
             end
         end
 
         function disconnect(obj, endpoint)
             r = calllib('libzmq', 'zmq_disconnect', obj.ptr, endpoint);
             if r == -1
-                zmq.ThrowZMQError();
+                zmq.internal.ThrowZMQError();
             end
         end
 
@@ -70,7 +70,7 @@ classdef Socket < handle
             r = calllib('libzmq', 'zmq_send', ...
                 obj.ptr, bytes_ptr, numel(bytes), 0);
             if r == -1
-                zmq.ThrowZMQError();
+                zmq.internal.ThrowZMQError();
             end
         end
 
@@ -79,13 +79,43 @@ classdef Socket < handle
         end
 
         function bytes = recv_bytes(obj)
+            [received, bytes] = obj.recv_base(true);
+        end
+
+        function [received, string] = recv_dont_wait(obj)
+            [received, bytes] = obj.recv_base(false);
+            string = char(bytes);
+        end
+
+        function [received, bytes] = recv_bytes_dont_wait(obj)
+            [received, bytes] = obj.recv_base(false);
+        end
+    end
+    methods (Access=private)
+        function [received, bytes] = recv_base(obj, block)
+            if block
+                flags = 0;
+            else
+                flags = 1; % ZMQ_DONTWAIT from zmq.h
+            end
             mor = true;
             bytes = int8([]);
+            received = true;
             while mor
                 r = calllib('libzmq', 'zmq_msg_recv', ...
-                    obj.msg_ptr, obj.ptr, 0);
+                    obj.msg_ptr, obj.ptr, flags);
                 if r == -1
-                    zmq.ThrowZMQError();
+                    err = calllib('libzmq', 'zmq_errno');
+                    % If this is not a blocking receive, then
+                    % we should accept errno == EAGAIN as
+                    % nonexceptional. It merely signals that
+                    % nothing has been received.
+                    % 11 is used as EAGAIN by the included dll.
+                    if ~block and err == 11
+                        received = false;
+                        return;
+                    end
+                    zmq.internal.ThrowZMQError();
                 end
                 siz = calllib('libzmq', 'zmq_msg_size', obj.msg_ptr);
                 if siz ~= 0
