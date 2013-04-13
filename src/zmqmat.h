@@ -9,6 +9,9 @@ zmqmat_export void* zmqmat_marray(size_t size);
 zmqmat_export void zmqmat_insert(void* array, void* socket);
 zmqmat_export int zmqmat_wait(void* array, long timeout);
 
+zmqmat_export int zmqmat_set_recv_timeout(void* socket, int milliseconds);
+zmqmat_export int zmqmat_set_send_timeout(void* socket, int milliseconds);
+
 #undef zmqmat_export
 
 #endif

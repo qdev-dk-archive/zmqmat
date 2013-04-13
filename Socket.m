@@ -58,6 +58,25 @@ classdef Socket < handle
             end
         end
 
+        function set_recv_timeout(obj, milliseconds)
+            r = calllib('zmqmat', 'zmqmat_set_recv_timeout', obj.ptr, milliseconds);
+            if r == -1
+                zmq.internal.throw_zmq_error();
+            end
+        end
+
+        function set_send_timeout(obj, milliseconds)
+            r = calllib('zmqmat', 'zmqmat_set_send_timeout', obj.ptr, milliseconds);
+            if r == -1
+                zmq.internal.throw_zmq_error();
+            end
+        end
+
+        function set_timeout(obj, milliseconds)
+            obj.set_send_timeout(milliseconds);
+            obj.set_recv_timeout(milliseconds);
+        end
+
         function send(obj, string)
             obj.send_bytes(int8(string));
         end
