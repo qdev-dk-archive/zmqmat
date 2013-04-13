@@ -11,18 +11,18 @@ classdef Context < handle
     methods
         function obj = Context()
             zmq.Context.load_zmq();
-            obj.ptr = calllib('libzmq', 'zmq_ctx_new');
+            obj.ptr = calllib('zmq', 'zmq_ctx_new');
         end
 
         function delete(obj)
-            calllib('libzmq', 'zmq_ctx_destroy', obj.ptr);
+            calllib('zmq', 'zmq_ctx_destroy', obj.ptr);
         end
 
         function sock = socket(obj, typ)
             if metaclass(typ) ~= ?zmq.Type
                 error('typ should be a zmq.Type instance');
             end
-            sock_ptr = calllib('libzmq', 'zmq_socket',...
+            sock_ptr = calllib('zmq', 'zmq_socket',...
                 obj.ptr, int32(typ));
             if sock_ptr.isNull()
                 zmq.internal.throw_zmq_error();
@@ -42,12 +42,17 @@ classdef Context < handle
         %
         %   Load the zmq dll.
         %   This is called automatically when needed.
-            if ~libisloaded('libzmq')
+            if ~libisloaded('zmq') || ~libisloaded('zmqmat')
                 savedir=pwd;
                 [mydir, filename, extension] = fileparts(mfilename('fullpath'));
                 cd(mydir);
                 cd('win64');
-                loadlibrary('libzmq-v100-mt-3_2_2.dll', @libzmq_proto, 'alias', 'libzmq');
+                if ~libisloaded('zmq')
+                    loadlibrary('libzmq-v100-mt-3_2_2.dll', @libzmq_proto, 'alias', 'zmq');
+                end
+                if ~libisloaded('zmqmat')
+                    loadlibrary('zmqmat', @zmqmat);
+                end
                 cd(savedir);
             end
         end

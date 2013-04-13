@@ -10,16 +10,15 @@ function ready = wait(sockets, timeout)
 %
 %   timeout can be 0 to not wait at all, or -1 to wait 
 %   indefinitely. Timeout must be an integer.
-    items = [];
+    socketptrs = [];
     for socket = sockets
-        item.socket = socket.get_raw_ptr();
-        item.fd = 0;
-        item.events = 1; % 1 is ZMQ_POLLIN
-        item.revents = 0;
-        items = [items item];
+        socketptrs = [socketptrs socket.get_raw_ptr()];
     end
-    items_ptr = libpointer('zmq_pollitem_tPtr', items);
-    r = calllib('libzmq', 'zmq_poll', items_ptr, numel(items), timeout);
+    array = calllib('zmqmat', 'zmqmat_marray', numel(socketptrs));
+    for socketptr = socketptrs
+        calllib('zmqmat', 'zmqmat_insert', array, socketptr);
+    end
+    r = calllib('zmqmat', 'zmqmat_wait', array, timeout);
     if r == -1
         zmq.internal.throw_zmq_error();
     end

@@ -21,38 +21,38 @@ classdef Socket < handle
             % to receive messages.
             obj.msg.m_ = 0;
             obj.msg_ptr = libpointer('zmq_msg_t', obj.msg);
-            calllib('libzmq', 'zmq_msg_init', obj.msg_ptr);
+            calllib('zmq', 'zmq_msg_init', obj.msg_ptr);
         end
     end
     methods
         function delete(obj)
-            calllib('libzmq', 'zmq_close', obj.ptr);
-            calllib('libzmq', 'zmq_msg_close', obj.msg_ptr);
+            calllib('zmq', 'zmq_close', obj.ptr);
+            calllib('zmq', 'zmq_msg_close', obj.msg_ptr);
         end
 
         function bind(obj, endpoint)
-            r = calllib('libzmq', 'zmq_bind', obj.ptr, endpoint);
+            r = calllib('zmq', 'zmq_bind', obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function unbind(obj, endpoint)
-            r = calllib('libzmq', 'zmq_unbind', obj.ptr, endpoint);
+            r = calllib('zmq', 'zmq_unbind', obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function connect(obj, endpoint)
-            r = calllib('libzmq', 'zmq_connect', obj.ptr, endpoint);
+            r = calllib('zmq', 'zmq_connect', obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function disconnect(obj, endpoint)
-            r = calllib('libzmq', 'zmq_disconnect', obj.ptr, endpoint);
+            r = calllib('zmq', 'zmq_disconnect', obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
@@ -67,7 +67,7 @@ classdef Socket < handle
                 error('bytes should be an array of int8')
             end
             bytes_ptr = libpointer('voidPtr', bytes);
-            r = calllib('libzmq', 'zmq_send', ...
+            r = calllib('zmq', 'zmq_send', ...
                 obj.ptr, bytes_ptr, numel(bytes), 0);
             if r == -1
                 zmq.internal.throw_zmq_error();
@@ -108,28 +108,28 @@ classdef Socket < handle
             bytes = int8([]);
             received = true;
             while mor
-                r = calllib('libzmq', 'zmq_msg_recv', ...
+                r = calllib('zmq', 'zmq_msg_recv', ...
                     obj.msg_ptr, obj.ptr, flags);
                 if r == -1
-                    err = calllib('libzmq', 'zmq_errno');
+                    err = calllib('zmq', 'zmq_errno');
                     % If this is not a blocking receive, then
                     % we should accept errno == EAGAIN as
                     % nonexceptional. It merely signals that
                     % nothing has been received.
                     % 11 is used as EAGAIN by the included dll.
-                    if ~block and err == 11
+                    if ~block && err == 11
                         received = false;
                         return;
                     end
                     zmq.internal.throw_zmq_error();
                 end
-                siz = calllib('libzmq', 'zmq_msg_size', obj.msg_ptr);
+                siz = calllib('zmq', 'zmq_msg_size', obj.msg_ptr);
                 if siz ~= 0
-                    data = calllib('libzmq', 'zmq_msg_data', obj.msg_ptr);
+                    data = calllib('zmq', 'zmq_msg_data', obj.msg_ptr);
                     setdatatype(data, 'int8Ptr', 1, siz);
                     bytes = [bytes data.Value];
                 end
-                mor = calllib('libzmq', 'zmq_msg_more', obj.msg_ptr);
+                mor = calllib('zmq', 'zmq_msg_more', obj.msg_ptr);
             end
         end
     end
