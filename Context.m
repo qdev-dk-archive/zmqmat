@@ -47,7 +47,7 @@ classdef Context < handle
                 [mydir, filename, extension] = fileparts(mfilename('fullpath'));
                 cd(mydir);
                 cd('win64');
-                loadlibrary('libzmq', @libzmq_proto);
+                loadlibrary('libzmq-v100-mt-3_2_2.dll', @libzmq_proto, 'alias', 'libzmq');
                 cd(savedir);
             end
         end
