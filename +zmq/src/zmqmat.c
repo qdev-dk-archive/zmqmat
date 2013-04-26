@@ -7,7 +7,7 @@ typedef struct {
     void** content; // An array of socket pointers (void*).
 } sock_array_t;
 
-void* zmqmat_marray(size_t size){
+void* zmqmat_array_new(size_t size){
     sock_array_t* r = (sock_array_t*) malloc(sizeof(sock_array_t));
     r->size = size;
     r->index = 0;
@@ -16,12 +16,18 @@ void* zmqmat_marray(size_t size){
     return r;
 }
 
-void zmqmat_insert(void* array_, void* socket){
+void zmqmat_array_insert(void* array_, void* socket){
     sock_array_t* array = (sock_array_t*) array_;
     size_t index = array->index;
     if(index >= array->size) return;
     array->content[index] = socket;
     array->index++;
+}
+
+void zmqmat_array_free(void* array_){
+    sock_array_t* array = (sock_array_t*) array_;
+    free(array->content);
+    free(array);
 }
 
 int zmqmat_wait(void* array_, long timeout) {
@@ -35,8 +41,6 @@ int zmqmat_wait(void* array_, long timeout) {
     }
     r = zmq_poll(items, (int) array->size, timeout);
     free(items);
-    free(array->content);
-    free(array);
     return r;
 }
 

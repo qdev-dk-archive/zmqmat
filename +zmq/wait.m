@@ -7,19 +7,35 @@ function ready = wait(sockets, timeout)
 %   received, otherwise it returns true. If you are waiting on multiple
 %   sockets, then use recv_no_wait to figure out which socket is ready.
 %
-%   timeout can be 0 to not wait at all, or -1 to wait indefinitely. Timeout
+%   timeout can be 0 to not wait at all, or Inf to wait indefinitely. Timeout
 %   must be an integer.
     socketptrs = [];
     for socket = sockets
         socketptrs = [socketptrs socket.get_raw_ptr()];
     end
-    array = calllib('zmqmat', 'zmqmat_marray', numel(socketptrs));
-    for socketptr = socketptrs
-        calllib('zmqmat', 'zmqmat_insert', array, socketptr);
+    array = calllib('zmqmat', 'zmqmat_array_new', numel(socketptrs));
+    free = @()calllib('zmqmat', 'zmqmat_array_free', array);
+    try
+        for socketptr = socketptrs
+            calllib('zmqmat', 'zmqmat_array_insert', array, socketptr);
+        end
+
+        id = tic();
+        r = 0;
+        while true
+            time_left = timeout - toc(id)*1000;
+            tim = max(min(time_left, 200), 0);
+            r = calllib('zmqmat', 'zmqmat_wait', array, tim);
+            if r == -1
+                zmq.internal.throw_zmq_error();
+            elseif r > 0 || time_left < 0
+                break;
+            end
+        end
+        ready = r >= 1;
+    catch err
+        free();
+        rethrow(err);
     end
-    r = calllib('zmqmat', 'zmqmat_wait', array, timeout);
-    if r == -1
-        zmq.internal.throw_zmq_error();
-    end
-    ready = r >= 1;
+    free();
 end

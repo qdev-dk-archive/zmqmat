@@ -11,8 +11,9 @@
     one socket at a time. We then construct an array of zmq_poll_items
     on the c side to call zmq_poll.
 */
-zmqmat_export void* zmqmat_marray(size_t size); /* Make array */
-zmqmat_export void zmqmat_insert(void* array, void* socket);
+zmqmat_export void* zmqmat_array_new(size_t size); /* Make array */
+zmqmat_export void zmqmat_array_free(void* array); /* Free array */
+zmqmat_export void zmqmat_array_insert(void* array, void* socket);
 zmqmat_export int zmqmat_wait(void* array, long timeout);
 
 /*
