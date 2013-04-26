@@ -30,8 +30,6 @@ fcns.thunkname{fcnNum}='int32voidPtrThunk';fcns.name{fcnNum}='zmq_term'; fcns.ca
 fcns.thunkname{fcnNum}='int32voidPtrThunk';fcns.name{fcnNum}='zmq_msg_init'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'zmq_msg_tPtr'};fcnNum=fcnNum+1;
 %  int zmq_msg_init_size ( zmq_msg_t * msg , size_t size ); 
 fcns.thunkname{fcnNum}='int32voidPtruint64Thunk';fcns.name{fcnNum}='zmq_msg_init_size'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'zmq_msg_tPtr', 'uint64'};fcnNum=fcnNum+1;
-%  int zmq_msg_init_data ( zmq_msg_t * msg , void * data , size_t size , zmq_free_fn * ffn , void * hint ); 
-fcns.thunkname{fcnNum}='int32voidPtrvoidPtruint64voidPtrvoidPtrThunk';fcns.name{fcnNum}='zmq_msg_init_data'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'zmq_msg_tPtr', 'voidPtr', 'uint64', 'FcnPtrPtr', 'voidPtr'};fcnNum=fcnNum+1;
 %  int zmq_msg_send ( zmq_msg_t * msg , void * s , int flags ); 
 fcns.thunkname{fcnNum}='int32voidPtrvoidPtrint32Thunk';fcns.name{fcnNum}='zmq_msg_send'; fcns.calltype{fcnNum}='Thunk'; fcns.LHS{fcnNum}='int32'; fcns.RHS{fcnNum}={'zmq_msg_tPtr', 'voidPtr', 'int32'};fcnNum=fcnNum+1;
 %  int zmq_msg_recv ( zmq_msg_t * msg , void * s , int flags ); 
