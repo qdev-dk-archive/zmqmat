@@ -206,6 +206,8 @@ classdef SocketT < handle
                     data = calllib('zmq', 'zmq_msg_data', obj.msg_ptr);
                     setdatatype(data, 'uint8Ptr', 1, siz);
                     msgs{end + 1} = char(data.Value);
+                else
+                    msgs{end + 1} = char([]);
                 end
                 if ~calllib('zmq', 'zmq_msg_more', obj.msg_ptr)
                     return
