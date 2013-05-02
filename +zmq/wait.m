@@ -31,6 +31,7 @@ function ready = wait(sockets, timeout)
             elseif r > 0 || time_left < 0
                 break;
             end
+            drawnow();
         end
         ready = r >= 1;
     catch err

@@ -5,9 +5,16 @@ classdef Context < handle
 %   use it to make all the sockets it needs. Use get_default_context to do
 %   this automatically unless you know better.
 
-    properties (SetAccess = private, GetAccess = private)
+    properties (Access = private)
         ptr
     end
+
+    properties (Constant)
+        types = containers.Map(...
+            {'pair', 'pub', 'sub', 'req', 'rep', 'dealer', 'router', 'pull', 'push', 'xpub', 'xsub'},...
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    end
+
     methods
         function obj = Context()
             zmq.Context.load_zmq();
@@ -18,20 +25,20 @@ classdef Context < handle
             calllib('zmq', 'zmq_ctx_destroy', obj.ptr);
         end
 
-        function sock = socket(obj, typ)
+        function sock = socket(obj, socket_type)
         % socket(socket_type)
         %
         %   Constructs a socket in this context.
         %   See <a href="http://api.zeromq.org/3-2:zmq-socket">the ZeroMQ refference</a> for a description of the various types.
-            if metaclass(typ) ~= ?zmq.Type
-                error('typ should be a zmq.Type instance');
+            if ~obj.types.isKey(socket_type)
+                error('No such socket type: %s', socket_type)
             end
             sock_ptr = calllib('zmq', 'zmq_socket',...
-                obj.ptr, int32(typ));
+                obj.ptr, int32(obj.types(socket_type)));
             if sock_ptr.isNull()
                 zmq.internal.throw_zmq_error();
             end
-            sock = zmq.SocketT(sock_ptr, obj, obj.ptr, typ);
+            sock = zmq.SocketT(sock_ptr, obj, obj.ptr, socket_type);
         end
 
         function ptr = get_raw_ptr(obj)

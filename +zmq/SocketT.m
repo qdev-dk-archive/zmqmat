@@ -101,6 +101,7 @@ classdef SocketT < handle
                     if ~(err == obj.EAGAIN && time_left >= 0)
                         zmq.internal.throw_zmq_error();
                     end
+                    drawnow();
                 else
                     break;
                 end
@@ -189,12 +190,17 @@ classdef SocketT < handle
                     obj.msg_ptr, obj.ptr, 0);
                 if r == -1
                     err = calllib('zmq', 'zmq_errno');
-                    if ~(err == obj.EAGAIN && time_left >= 0)
-                        if block
-                            zmq.internal.throw_zmq_error();
+                    if err == obj.EAGAIN
+                        if time_left < 0 
+                            if block
+                                zmq.internal.throw_zmq_error();
+                            end
+                            received = false;
+                            return
                         end
-                        received = false;
-                        return;
+                        drawnow();
+                    else
+                        zmq.internal.throw_zmq_error();
                     end
                 else
                     break;
