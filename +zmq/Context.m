@@ -18,11 +18,11 @@ classdef Context < handle
     methods
         function obj = Context()
             zmq.Context.load_zmq();
-            obj.ptr = calllib('zmq', 'zmq_ctx_new');
+            obj.ptr = zmqraw.ZmqLibrary.zmq_ctx_new();
         end
 
         function delete(obj)
-            calllib('zmq', 'zmq_ctx_destroy', obj.ptr);
+            zmqraw.ZmqLibrary.zmq_ctx_destroy(obj.ptr);
         end
 
         function sock = socket(obj, socket_type)
@@ -33,7 +33,7 @@ classdef Context < handle
             if ~obj.types.isKey(socket_type)
                 error('No such socket type: %s', socket_type)
             end
-            sock_ptr = calllib('zmq', 'zmq_socket',...
+            sock_ptr = zmqraw.ZmqLibrary.zmq_socket(...
                 obj.ptr, int32(obj.types(socket_type)));
             if sock_ptr.isNull()
                 zmq.internal.throw_zmq_error();
@@ -68,19 +68,15 @@ classdef Context < handle
         %   Load the zmq dll. This is called automatically when needed but you
         %   can trigger it early if you want to isolate problems related to
         %   dll loading.
-            if ~libisloaded('zmq') || ~libisloaded('zmqmat')
-                savedir=pwd;
-                [mydir, filename, extension] = fileparts(mfilename('fullpath'));
-                cd(mydir);
-                cd('win64');
-                if ~libisloaded('zmq')
-                    loadlibrary('libzmq-v100-mt-3_2_2.dll', @libzmq_proto, 'alias', 'zmq');
+            [mydir, ~, ~] = fileparts(mfilename('fullpath'));
+            jarfile = char(java.io.File(fullfile(mydir, 'jar', 'zmq.jar')).getCanonicalPath());
+            for file = javaclasspath()
+                if strcmp(file, jarfile)
+                    return;
                 end
-                if ~libisloaded('zmqmat')
-                    loadlibrary('zmqmat', @zmqmat);
-                end
-                cd(savedir);
             end
+            javaaddpath(jarfile);
+            org.bridj.BridJ.setNativeLibraryActualName('zmq', 'libzmq-v110-mt-3_2_2');
         end
     end
 end

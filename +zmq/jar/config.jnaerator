@@ -1,7 +1,10 @@
 -library zmq
+-package zmqraw
 -mode StandaloneJar
 -runtime BridJ
 -jar zmq.jar
 "$(ZMQDIR)\include\zmq.h"
 -arch win64
 "$(ZMQDIR)\bin\libzmq-v110-mt-3_2_2.dll"
+"$(ZMQDIR)\bin\ms*.dll"
+-libFile "$(ZMQDIR)\bin\Microsoft.*.manifest"

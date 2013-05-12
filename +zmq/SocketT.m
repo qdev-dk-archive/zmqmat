@@ -31,40 +31,40 @@ classdef SocketT < handle
 
             % Initialize a zmq_msg_t that we will use
             % to receive messages.
-            obj.msg.m_ = 0;
-            obj.msg_ptr = libpointer('zmq_msg_t', obj.msg);
-            calllib('zmq', 'zmq_msg_init', obj.msg_ptr);
+            obj.msg = zmqraw.zmq_msg_t();
+            obj.msg_ptr = org.bridj.Pointer.pointerTo(obj.msg);
+            zmqraw.ZmqLibrary.zmq_msg_init(obj.msg_ptr);
         end
     end
     methods
         function delete(obj)
-            calllib('zmq', 'zmq_close', obj.ptr);
-            calllib('zmq', 'zmq_msg_close', obj.msg_ptr);
+            zmqraw.ZmqLibrary.zmq_close(obj.ptr);
+            zmqraw.ZmqLibrary.zmq_msg_close(obj.msg_ptr);
         end
 
         function bind(obj, endpoint)
-            r = calllib('zmq', 'zmq_bind', obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_bind(obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function unbind(obj, endpoint)
-            r = calllib('zmq', 'zmq_unbind', obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_unbind(obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function connect(obj, endpoint)
-            r = calllib('zmq', 'zmq_connect', obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_connect(obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function disconnect(obj, endpoint)
-            r = calllib('zmq', 'zmq_disconnect', obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_disconnect(obj.ptr, endpoint);
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
@@ -97,7 +97,7 @@ classdef SocketT < handle
                 obj.set_send_timeout(timeout);
                 r = obj.send_raw(head, ~isempty(tail));
                 if r == -1
-                    err = calllib('zmq', 'zmq_errno');
+                    err = zmqraw.ZmqLibrary.zmq_errno();
                     if ~(err == obj.EAGAIN && time_left >= 0)
                         zmq.internal.throw_zmq_error();
                     end
@@ -154,9 +154,8 @@ classdef SocketT < handle
                 flags = 0;
             end
             bytes = uint8(msg);
-            bytes_ptr = libpointer('voidPtr', bytes);
-            r = calllib('zmq', 'zmq_send', ...
-                obj.ptr, bytes_ptr, numel(bytes), flags);
+            bytes_ptr = qd.bridj.Pointer.pointerTo(bytes);
+            r = zmqraw.ZmqLibrary.zmq_send(obj.ptr, bytes_ptr, numel(bytes), flags);
         end
 
         function set_recv_timeout(obj, milliseconds)
@@ -186,10 +185,9 @@ classdef SocketT < handle
                     time_left = -1;
                 end
                 obj.set_recv_timeout(timeout);
-                r = calllib('zmq', 'zmq_msg_recv', ...
-                    obj.msg_ptr, obj.ptr, 0);
+                r = zmqraw.ZmqLibrary.zmq_msg_recv(obj.msg_ptr, obj.ptr, 0);
                 if r == -1
-                    err = calllib('zmq', 'zmq_errno');
+                    err = zmqraw.ZmqLibrary.zmq_errno();
                     if err == obj.EAGAIN
                         if time_left < 0 
                             if block
@@ -207,19 +205,17 @@ classdef SocketT < handle
                 end
             end
             while true
-                siz = calllib('zmq', 'zmq_msg_size', obj.msg_ptr);
+                siz = zmqraw.ZmqLibrary.zmq_msg_size(obj.msg_ptr);
                 if siz ~= 0
-                    data = calllib('zmq', 'zmq_msg_data', obj.msg_ptr);
-                    setdatatype(data, 'uint8Ptr', 1, siz);
-                    msgs{end + 1} = char(data.Value);
+                    data = zmqraw.ZmqLibrary.zmq_msg_data(obj.msg_ptr);
+                    msgs{end + 1} = char(transpose(data.getBytes(siz)));
                 else
                     msgs{end + 1} = char([]);
                 end
-                if ~calllib('zmq', 'zmq_msg_more', obj.msg_ptr)
+                if ~zmqraw.ZmqLibrary.zmq_msg_more(obj.msg_ptr)
                     return
                 end
-                r = calllib('zmq', 'zmq_msg_recv', ...
-                    obj.msg_ptr, obj.ptr, 0);
+                r = zmqraw.ZmqLibrary.zmq_msg_recv(obj.msg_ptr, obj.ptr, 0);
                 if r == -1
                     zmq.internal.throw_zmq_error();
                 end
