@@ -9,16 +9,20 @@ classdef Context < handle
         ptr
     end
 
-    properties (Constant)
-        types = containers.Map(...
-            {'pair', 'pub', 'sub', 'req', 'rep', 'dealer', 'router', 'pull', 'push', 'xpub', 'xsub'},...
-            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    properties (SetAccess = private)
+        types
     end
 
     methods
         function obj = Context()
             zmq.Context.load_zmq();
             obj.ptr = zmqraw.ZmqLibrary.zmq_ctx_new();
+            obj.types = containers.Map();
+            types = {'pair', 'pub', 'sub', 'req', 'rep', 'dealer', ...
+                'router', 'pull', 'push', 'xpub', 'xsub'};
+            for typ = types
+                obj.types(typ{1}) = zmqraw.ZmqLibrary.(['ZMQ_' upper(typ{1})]);
+            end
         end
 
         function delete(obj)
@@ -34,8 +38,8 @@ classdef Context < handle
                 error('No such socket type: %s', socket_type)
             end
             sock_ptr = zmqraw.ZmqLibrary.zmq_socket(...
-                obj.ptr, int32(obj.types(socket_type)));
-            if sock_ptr.isNull()
+                obj.ptr, obj.types(socket_type));
+            if isempty(sock_ptr)
                 zmq.internal.throw_zmq_error();
             end
             sock = zmq.SocketT(sock_ptr, obj, obj.ptr, socket_type);

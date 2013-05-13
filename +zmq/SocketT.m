@@ -12,9 +12,7 @@ classdef SocketT < handle
     end
 
     properties (Access = private, Constant)
-        EAGAIN = 11; % errno if a timeout occured or a non-blocking read found nothing.
-        SNDMORE = 2;
-        DONTWAIT = 1;
+        EAGAIN = 11
     end
 
     properties
@@ -43,28 +41,32 @@ classdef SocketT < handle
         end
 
         function bind(obj, endpoint)
-            r = zmqraw.ZmqLibrary.zmq_bind(obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_bind(obj.ptr, ...
+                org.bridj.Pointer.pointerToCString(endpoint));
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function unbind(obj, endpoint)
-            r = zmqraw.ZmqLibrary.zmq_unbind(obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_unbind(obj.ptr, ...
+                org.bridj.Pointer.pointerToCString(endpoint));
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function connect(obj, endpoint)
-            r = zmqraw.ZmqLibrary.zmq_connect(obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_connect(obj.ptr, ...
+                org.bridj.Pointer.pointerToCString(endpoint));
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
         end
 
         function disconnect(obj, endpoint)
-            r = zmqraw.ZmqLibrary.zmq_disconnect(obj.ptr, endpoint);
+            r = zmqraw.ZmqLibrary.zmq_disconnect(obj.ptr, ...
+                org.bridj.Pointer.pointerToCString(endpoint));
             if r == -1
                 zmq.internal.throw_zmq_error();
             end
@@ -77,9 +79,7 @@ classdef SocketT < handle
 
         function send(obj, msg)
             if iscell(msg)
-                if isempty(msg)
-                    return
-                end
+                assert(~isempty(msg));
                 for m = msg
                     assert(ischar(m{1}));
                 end
@@ -149,27 +149,28 @@ classdef SocketT < handle
         function r = send_raw(obj, msg, sndmore)
             assert(ischar(msg));
             if sndmore
-                flags = obj.SNDMORE;
+                flags = zmqraw.ZmqLibrary.ZMQ_SNDMORE;
             else
                 flags = 0;
             end
             bytes = uint8(msg);
-            bytes_ptr = qd.bridj.Pointer.pointerTo(bytes);
+            bytes_ptr = org.bridj.Pointer.pointerToBytes(bytes);
             r = zmqraw.ZmqLibrary.zmq_send(obj.ptr, bytes_ptr, numel(bytes), flags);
         end
 
         function set_recv_timeout(obj, milliseconds)
-            r = calllib('zmqmat', 'zmqmat_set_recv_timeout', obj.ptr, milliseconds);
-            if r == -1
-                zmq.internal.throw_zmq_error();
-            end
+            v = org.bridj.Pointer.pointerToInt(milliseconds);
+            obj.set_socket_option(zmqraw.ZmqLibrary.ZMQ_RCVTIMEO, v);
         end
 
         function set_send_timeout(obj, milliseconds)
-            r = calllib('zmqmat', 'zmqmat_set_send_timeout', obj.ptr, milliseconds);
-            if r == -1
-                zmq.internal.throw_zmq_error();
-            end
+            v = org.bridj.Pointer.pointerToInt(milliseconds);
+            obj.set_socket_option(zmqraw.ZmqLibrary.ZMQ_SNDTIMEO, v);
+        end
+
+        function r = set_socket_option(obj, name, v)
+            r = zmqraw.ZmqLibrary.zmq_setsockopt(obj.ptr, name, ...
+                v, org.bridj.BridJ.sizeOf(v.getTargetType()));
         end
 
         function [received, msgs] = recv_base(obj, block)

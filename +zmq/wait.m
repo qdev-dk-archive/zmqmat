@@ -9,23 +9,20 @@ function ready = wait(sockets, timeout)
 %
 %   timeout can be 0 to not wait at all, or Inf to wait indefinitely. Timeout
 %   must be an integer.
-    socketptrs = [];
-    for socket = sockets
-        socketptrs = [socketptrs socket.get_raw_ptr()];
+    items = org.bridj.Pointer.allocateArray( ...
+        zmqraw.zmq_pollitem_t().getClass(), length(sockets));
+    for i = 1:length(sockets)
+        item = zmqraw.zmq_pollitem_t();
+        item.socket(sockets(i).get_raw_ptr());
+        item.events(zmqraw.ZmqLibrary.ZMQ_POLLIN);
+        items.set(i - 1, item);
     end
-    array = calllib('zmqmat', 'zmqmat_array_new', numel(socketptrs));
-    cleanup = onCleanup(@()calllib('zmqmat', 'zmqmat_array_free', array));
-    
-    for socketptr = socketptrs
-        calllib('zmqmat', 'zmqmat_array_insert', array, socketptr);
-    end
-
     id = tic();
     r = 0;
     while true
         time_left = timeout - toc(id)*1000;
         tim = max(min(time_left, 200), 0);
-        r = calllib('zmqmat', 'zmqmat_wait', array, tim);
+        r = zmqraw.ZmqLibrary.zmq_poll(items, length(sockets), tim);
         if r == -1
             zmq.internal.throw_zmq_error();
         elseif r > 0 || time_left < 0

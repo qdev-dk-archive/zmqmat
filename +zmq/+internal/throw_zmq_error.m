@@ -11,6 +11,7 @@ function throw_zmq_error()
             ['A zmq error occured, but errno has not '...
             'been set (should not happen).']);
     end
-    err_string = zmqraw.ZmqLibrary.zmq_strerror(err);
+    str = zmqraw.ZmqLibrary.zmq_strerror(err);
+    err_string = char(str.getCString());
     error(['zmq_error:' num2str(err) ':' err_string]);
 end
