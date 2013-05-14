@@ -15,17 +15,21 @@ classdef SocketT < handle
         EAGAIN = 11
     end
 
-    properties
-        send_timeout = Inf
-        recv_timeout = Inf
-    end
-
     methods (Access=?zmq.Context)
         function obj = SocketT(ptr, ctx, ctx_ptr, socket_type)
             obj.ptr = ptr;
             obj.ctx = ctx;
             obj.ctx_ptr = ctx_ptr;
             obj.socket_type = socket_type;
+
+            % Since matlab runs everything in the gui thread
+            % we set a timeout of 200ms on the sockets and retry
+            % recv and send as necessary.
+            for opt = [ zmqraw.ZmqLibrary.ZMQ_RCVTIMEO, ...
+                        zmqraw.ZmqLibrary.ZMQ_SNDTIMEO]
+                v = org.bridj.Pointer.pointerToInt(200);
+                obj.set_socket_option(opt, v);
+            end
 
             % Initialize a zmq_msg_t that we will use
             % to receive messages.
@@ -72,11 +76,6 @@ classdef SocketT < handle
             end
         end
 
-        function set_timeout(obj, milliseconds)
-            obj.send_timeout = milliseconds;
-            obj.recv_timeout = milliseconds;
-        end
-
         function send(obj, msg)
             if iscell(msg)
                 assert(~isempty(msg));
@@ -90,15 +89,11 @@ classdef SocketT < handle
                 head = msg;
                 tail = {};
             end
-            id = tic();
             while true
-                time_left = obj.send_timeout - toc(id)*1000;
-                timeout = max(min(time_left, 200), 0);
-                obj.set_send_timeout(timeout);
                 r = obj.send_raw(head, ~isempty(tail));
                 if r == -1
                     err = zmqraw.ZmqLibrary.zmq_errno();
-                    if ~(err == obj.EAGAIN && time_left >= 0)
+                    if err ~= obj.EAGAIN
                         zmq.internal.throw_zmq_error();
                     end
                     drawnow();
@@ -158,42 +153,28 @@ classdef SocketT < handle
             r = zmqraw.ZmqLibrary.zmq_send(obj.ptr, bytes_ptr, numel(bytes), flags);
         end
 
-        function set_recv_timeout(obj, milliseconds)
-            v = org.bridj.Pointer.pointerToInt(milliseconds);
-            obj.set_socket_option(zmqraw.ZmqLibrary.ZMQ_RCVTIMEO, v);
-        end
-
-        function set_send_timeout(obj, milliseconds)
-            v = org.bridj.Pointer.pointerToInt(milliseconds);
-            obj.set_socket_option(zmqraw.ZmqLibrary.ZMQ_SNDTIMEO, v);
-        end
-
-        function r = set_socket_option(obj, name, v)
+        function set_socket_option(obj, name, v)
             r = zmqraw.ZmqLibrary.zmq_setsockopt(obj.ptr, name, ...
                 v, org.bridj.BridJ.sizeOf(v.getTargetType()));
+            if r ~= 0
+                zmq.internal.throw_zmq_error();
+            end
         end
 
         function [received, msgs] = recv_base(obj, block)
             msgs = {};
             received = true;
-            id = tic();
             while true
                 if block
-                    time_left = obj.recv_timeout - toc(id)*1000;
-                    timeout = max(min(time_left, 200), 0);
+                    flags = zmqraw.ZmqLibrary.ZMQ_DONTWAIT;
                 else
-                    timeout = 0;
-                    time_left = -1;
+                    flags = 0;
                 end
-                obj.set_recv_timeout(timeout);
-                r = zmqraw.ZmqLibrary.zmq_msg_recv(obj.msg_ptr, obj.ptr, 0);
+                r = zmqraw.ZmqLibrary.zmq_msg_recv(obj.msg_ptr, obj.ptr, flags);
                 if r == -1
                     err = zmqraw.ZmqLibrary.zmq_errno();
                     if err == obj.EAGAIN
-                        if time_left < 0 
-                            if block
-                                zmq.internal.throw_zmq_error();
-                            end
+                        if ~block
                             received = false;
                             return
                         end
