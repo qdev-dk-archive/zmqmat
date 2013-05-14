@@ -28,7 +28,7 @@ classdef SocketT < handle
             for opt = [ zmqraw.ZmqLibrary.ZMQ_RCVTIMEO, ...
                         zmqraw.ZmqLibrary.ZMQ_SNDTIMEO]
                 v = org.bridj.Pointer.pointerToInt(200);
-                obj.set_socket_option(opt, v);
+                obj.set_socket_option_scalar(opt, v);
             end
 
             % Initialize a zmq_msg_t that we will use
@@ -76,7 +76,19 @@ classdef SocketT < handle
             end
         end
 
+        function subscribe(obj, filter)
+            obj.set_socket_option_bytes(zmqraw.ZmqLibrary.ZMQ_SUBSCRIBE, filter);
+        end
+
+        function unsubscribe(obj, filter)
+            obj.set_socket_option_bytes(zmqraw.ZmqLibrary.ZMQ_UNSUBSCRIBE, filter);
+        end
+
         function send(obj, msg)
+        % sock.send(msg)
+        %   
+        % If msg is a string, that string will be sent as a single message. If
+        % msg is a cell array of strings, a multi-part message will be sent.
             if iscell(msg)
                 assert(~isempty(msg));
                 for m = msg
@@ -90,7 +102,7 @@ classdef SocketT < handle
                 tail = {};
             end
             while true
-                r = obj.send_raw(head, ~isempty(tail));
+                r = obj.send_base(head, ~isempty(tail));
                 if r == -1
                     err = zmqraw.ZmqLibrary.zmq_errno();
                     if err ~= obj.EAGAIN
@@ -102,7 +114,7 @@ classdef SocketT < handle
                 end
             end
             for i = 1:length(tail)
-                r = obj.send_raw(tail{i}, i ~= length(tail));
+                r = obj.send_base(tail{i}, i ~= length(tail));
                 if r == -1
                     zmq.internal.throw_zmq_error();
                 end
@@ -110,13 +122,23 @@ classdef SocketT < handle
         end
 
         function [msg, varargout] = recv(obj, varargin)
+        % sock.recv(['multi'], ['dontwait'])
+        %
+        % Without options, receive a single message as a string.
+        %
+        % Options:
+        %   - 'multi': Receive a cell array containing all the parts of a
+        %     multi-part message. Without this options, multi-part messages
+        %     will be concatenated.
+        %   - 'dontwait': Do not block if no messages are immediately
+        %     available (instead, throw an exception).
             blocking = true;
             multi = false;
             for opt = varargin
                 switch opt{1}
                 case 'multi'
                     multi = true;
-                case 'nowait'
+                case 'dontwait'
                     blocking = false;
                 otherwise
                     error('Unsupported option: %s', opt{1})
@@ -135,13 +157,16 @@ classdef SocketT < handle
 
         function ptr = get_raw_ptr(obj)
         % get_raw_ptr
-        %   Returns a ptr to the underlying zmq socket.
+        %   
+        %   Returns a ptr to the underlying zmq socket. See bridj for more
+        %   information. The jar zmqraw is JNAerator generated bridj binding 
+        %   of zmq.h.
             ptr = obj.ptr;
         end
     end
     methods (Access=private)
 
-        function r = send_raw(obj, msg, sndmore)
+        function r = send_base(obj, msg, sndmore)
             assert(ischar(msg));
             if sndmore
                 flags = zmqraw.ZmqLibrary.ZMQ_SNDMORE;
@@ -153,9 +178,19 @@ classdef SocketT < handle
             r = zmqraw.ZmqLibrary.zmq_send(obj.ptr, bytes_ptr, numel(bytes), flags);
         end
 
-        function set_socket_option(obj, name, v)
+        function set_socket_option_scalar(obj, name, v)
             r = zmqraw.ZmqLibrary.zmq_setsockopt(obj.ptr, name, ...
                 v, org.bridj.BridJ.sizeOf(v.getTargetType()));
+            if r ~= 0
+                zmq.internal.throw_zmq_error();
+            end
+        end
+
+        function set_socket_option_bytes(obj, name, val)
+            bytes = uint8(val);
+            bytes_ptr = org.bridj.Pointer.pointerToBytes(bytes);
+            r = zmqraw.ZmqLibrary.zmq_setsockopt(obj.ptr, name, ...
+                bytes_ptr, length(bytes));
             if r ~= 0
                 zmq.internal.throw_zmq_error();
             end
