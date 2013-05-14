@@ -80,7 +80,7 @@ classdef Context < handle
                 end
             end
             javaaddpath(jarfile);
-            org.bridj.BridJ.setNativeLibraryActualName('zmq', 'libzmq-v110-mt-3_2_2');
+            org.bridj.BridJ.setNativeLibraryActualName('zmq', 'libzmq-v100-mt-3_2_2');
         end
     end
 end
