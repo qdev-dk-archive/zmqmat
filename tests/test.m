@@ -1,12 +1,13 @@
 function test(main)
-    req_rep_tests = [@simple_test, @multi_test, @wait_test];
+    req_rep_tests = {@simple_test, @multi_test, @wait_test};
     for f = req_rep_tests
+        f = f{1};
         endpoint = 'tcp://127.0.0.1:5678/';
         if main
-            sock = zmq.sock('req');
+            sock = zmq.socket('req');
             sock.connect(endpoint);
         else
-            sock = zmq.sock('rep');
+            sock = zmq.socket('rep');
             sock.bind(endpoint);
         end
         f(sock, main);
@@ -40,7 +41,7 @@ end
 
 function wait_test(sock, isreq)
     if isreq
-        epsilon = 0.01; % 10 ms grace
+        epsilon = 0.03; % 30 ms grace
         tic;
         r = zmq.wait(sock, 1000); 
         t = toc;
