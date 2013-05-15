@@ -72,19 +72,21 @@ classdef Context < handle
         %   Load the zmq dll. This is called automatically when needed but you
         %   can trigger it early if you want to isolate problems related to
         %   dll loading.
-            [mydir, ~, ~] = fileparts(mfilename('fullpath'));
-            jarfile = char(java.io.File(fullfile(mydir, 'jar', 'zmq.jar')).getCanonicalPath());
-            for file = javaclasspath()
-                if strcmp(file{1}, jarfile)
-                    return;
-                end
+            if exist('zmqraw.ZmqLibrary','class')
+                return
             end
+            jarfile = zmq.Context.location_of_jar_file();
             warning(['Adding zmq to the dynamic java class path. '... 
                 'This has cleared global variables and '...
-                'persistent hidden state. To avoid this, add:\n%s\nto your '...
-                'static java path.'], jarfile);
+                'persistent hidden state. To avoid this in the futute, '...
+                'add "%s" to your static java path.'], jarfile);
             javaaddpath(jarfile);
             org.bridj.BridJ.setNativeLibraryActualName('zmq', 'libzmq-v100-mt-3_2_2');
+        end
+
+        function jarfile = location_of_jar_file()
+            [mydir, ~, ~] = fileparts(mfilename('fullpath'));
+            jarfile = char(java.io.File(fullfile(mydir, 'jar', 'zmq.jar')).getCanonicalPath());
         end
     end
 end
