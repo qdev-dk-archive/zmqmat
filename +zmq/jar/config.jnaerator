@@ -4,8 +4,6 @@
 -runtime BridJ
 -jar zmq.jar
 -DSOCKET=void*
-"$(ZMQDIR)\include\zmq.h"
+"include\zmq.h"
 -arch win64
-"$(ZMQDIR)\bin\libzmq-v100-mt-3_2_2.dll"
-"$(ZMQDIR)\bin\ms*.dll"
--libFile "$(ZMQDIR)\bin\Microsoft.*.manifest"
+"dlls\win64\*.dll"
