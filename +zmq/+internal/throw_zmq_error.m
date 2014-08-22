@@ -1,11 +1,13 @@
-function throw_zmq_error()
+function throw_zmq_error(err)
 % throw_zmq_error
 %   This function will throw an error based on
 %   the last zmq error. Note, it will always throw,
 %   it should only be called when zmq api call has given 
 %   a null pointer or similar to indicate an error.
     zmq.Context.load_zmq();
-    err = zmqraw.ZmqLibrary.zmq_errno();
+    if nargin == 0
+        err = zmqraw.ZmqLibrary.zmq_errno();
+    end
     if err == 0
         error(...
             ['A zmq error occured, but errno has not '...

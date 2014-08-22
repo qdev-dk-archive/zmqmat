@@ -106,7 +106,7 @@ classdef SocketT < handle
                 if r == -1
                     err = zmqraw.ZmqLibrary.zmq_errno();
                     if err ~= obj.EAGAIN
-                        zmq.internal.throw_zmq_error();
+                        zmq.internal.throw_zmq_error(err);
                     end
                     drawnow();
                 else
@@ -122,7 +122,8 @@ classdef SocketT < handle
         end
 
         function [msg, varargout] = recv(obj, varargin)
-        % sock.recv(['multi'], ['dontwait'])
+        % msg = sock.recv(['multi'])
+        % [msg, received] = sock.recv('dontwait', ['multi'])
         %
         % Without options, receive a single message as a string.
         %
@@ -131,7 +132,7 @@ classdef SocketT < handle
         %     multi-part message. Without this options, multi-part messages
         %     will be concatenated.
         %   - 'dontwait': Do not block if no messages are immediately
-        %     available (instead, throw an exception).
+        %     available.
             blocking = true;
             multi = false;
             for opt = varargin
@@ -215,7 +216,7 @@ classdef SocketT < handle
                         end
                         drawnow();
                     else
-                        zmq.internal.throw_zmq_error();
+                        zmq.internal.throw_zmq_error(err);
                     end
                 else
                     break;
