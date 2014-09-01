@@ -202,9 +202,9 @@ classdef SocketT < handle
             received = true;
             while true
                 if block
-                    flags = zmqraw.ZmqLibrary.ZMQ_DONTWAIT;
-                else
                     flags = 0;
+                else
+                    flags = zmqraw.ZmqLibrary.ZMQ_DONTWAIT;
                 end
                 r = zmqraw.ZmqLibrary.zmq_msg_recv(obj.msg_ptr, obj.ptr, flags);
                 if r == -1
