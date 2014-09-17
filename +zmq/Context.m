@@ -60,7 +60,6 @@ classdef Context < handle
         %   every subsequent call.
             persistent def_ctx
             if isempty(def_ctx) || ~isvalid(def_ctx)
-                disp('Creating default ctx.');
                 def_ctx = zmq.Context();
             end
             ctx = def_ctx;
